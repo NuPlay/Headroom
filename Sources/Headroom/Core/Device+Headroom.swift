@@ -2,34 +2,68 @@ import Foundation
 @_exported import DeviceKit
 
 public extension Device {
-    /// The coarse Headroom tier for this DeviceKit device.
-    var headroomTier: HeadroomTier {
+    /// Normalized Headroom score for this DeviceKit device.
+    var headroomScore: HeadroomScore {
         #if os(iOS)
         switch self {
         case .simulator(let model):
-            return model.headroomTier
+            return model.headroomScore
         case .unknown(let identifier):
-            return HardwareTierResolver.tierForMachineIdentifier(identifier) ?? .medium
+            return HardwareScoreResolver.scoreForMachineIdentifier(identifier) ?? HeadroomTier.medium.representativeScore
+        case .iPhone17Pro, .iPhone17ProMax:
+            return 100
+        case .iPhoneAir:
+            return 96
+        case .iPhone17, .iPhone17e:
+            return 95
+        case .iPhone16Pro, .iPhone16ProMax:
+            return 92
+        case .iPhone16, .iPhone16Plus, .iPhone16e:
+            return 90
+        case .iPhone15Pro, .iPhone15ProMax:
+            return 84
+        case .iPhone14Pro, .iPhone14ProMax, .iPhone15, .iPhone15Plus:
+            return 79
+        case .iPhone13Pro, .iPhone13ProMax, .iPhone14, .iPhone14Plus, .iPhoneSE3:
+            return 74
+        case .iPhone13, .iPhone13Mini:
+            return 71
+        case .iPhone12ProMax:
+            return 68
+        case .iPhone12Pro:
+            return 67
+        case .iPhone12, .iPhone12Mini:
+            return 66
+        case .iPhone11ProMax:
+            return 62
+        case .iPhone11Pro:
+            return 61
+        case .iPhone11:
+            return 60
+        case .iPhoneSE2:
+            return 56
+        case .iPhoneXS, .iPhoneXSMax, .iPhoneXR:
+            return 50
+        case .iPhone8Plus, .iPhoneX:
+            return 39
+        case .iPhone8:
+            return 39
         default:
-            switch cpu {
-            case .a17Pro, .a18, .a18Pro, .a19, .a19Pro, .m3, .m4, .m5:
-                return .ultra
-            case .a15Bionic, .a16Bionic, .m1, .m2:
-                return .high
-            case .a12Bionic, .a12XBionic, .a12ZBionic, .a13Bionic, .a14Bionic:
-                return .medium
-            default:
-                return .low
-            }
+            return HardwareScoreResolver.scoreForCPU(cpu)
         }
         #else
         switch self {
         case .simulator(let model):
-            return model.headroomTier
+            return model.headroomScore
         case .unknown(let identifier):
-            return HardwareTierResolver.tierForMachineIdentifier(identifier) ?? .medium
+            return HardwareScoreResolver.scoreForMachineIdentifier(identifier) ?? HeadroomTier.medium.representativeScore
         }
         #endif
+    }
+
+    /// The coarse Headroom tier for this DeviceKit device.
+    var headroomTier: HeadroomTier {
+        headroomScore.tier
     }
 }
 

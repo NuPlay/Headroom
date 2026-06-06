@@ -15,19 +15,19 @@ struct HeadroomEvaluator: Sendable {
     func snapshot() -> HeadroomSnapshot {
         let signals = signalProvider.signals(memoryPressurePolicy: configuration.policy.memoryPressurePolicy)
 
-        let hardwareTier = configuration.forcedHardwareTier
-            ?? HardwareTierResolver.resolve(signals: signals, policy: configuration.policy)
+        let hardwareScore = configuration.forcedHardwareScore
+            ?? HardwareScoreResolver.resolve(signals: signals, policy: configuration.policy)
 
-        let effectiveTier = configuration.forcedEffectiveTier
-            ?? EffectiveTierResolver.resolve(
-                hardwareTier: hardwareTier,
+        let effectiveScore = configuration.forcedEffectiveScore
+            ?? EffectiveScoreResolver.resolve(
+                hardwareScore: hardwareScore,
                 signals: signals,
                 policy: configuration.policy
             )
 
         return HeadroomSnapshot(
-            hardwareTier: hardwareTier,
-            effectiveTier: effectiveTier,
+            hardwareScore: hardwareScore,
+            effectiveScore: effectiveScore,
             signals: signals
         )
     }

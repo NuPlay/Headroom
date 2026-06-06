@@ -42,7 +42,11 @@ func featureAvailabilityReportsFailures() {
 
 
 @Test
-func deviceKitReferenceDeviceMapsToExpectedTier() {
+func deviceKitReferenceDeviceMapsToExpectedScoreAndTier() {
+    #expect(Device.unknown("iPhone12,1").headroomScore == 60)
+    #expect(Device.unknown("iPhone14,5").headroomScore == 71)
+    #expect(Device.unknown("iPhone16,1").headroomScore == 84)
+
     #expect(Device.unknown("iPhone12,1").headroomTier == .medium)
     #expect(Device.unknown("iPhone14,5").headroomTier == .high)
     #expect(Device.unknown("iPhone16,1").headroomTier == .ultra)

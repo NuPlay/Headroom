@@ -3,6 +3,7 @@ import DeviceKit
 
 /// A feature-level gate for expensive code paths.
 public struct HeadroomFeature: Equatable, Sendable {
+    public let requiredScore: HeadroomScore
     public let requiredTier: HeadroomTier
     public let tierSource: HeadroomFeatureTierSource
     public let minimumAvailableMemoryBytes: UInt64?
@@ -10,6 +11,25 @@ public struct HeadroomFeature: Equatable, Sendable {
     public let storageUsage: HeadroomStorageUsage
     public let allowsLowPowerMode: Bool
     public let maximumThermalState: HeadroomThermalState?
+
+    public init(
+        requiredScore: HeadroomScore,
+        tierSource: HeadroomFeatureTierSource = .effective,
+        minimumAvailableMemoryBytes: UInt64? = nil,
+        minimumAvailableStorageBytes: Int64? = nil,
+        storageUsage: HeadroomStorageUsage = .important,
+        allowsLowPowerMode: Bool = true,
+        maximumThermalState: HeadroomThermalState? = nil
+    ) {
+        self.requiredScore = requiredScore
+        self.requiredTier = requiredScore.tier
+        self.tierSource = tierSource
+        self.minimumAvailableMemoryBytes = minimumAvailableMemoryBytes
+        self.minimumAvailableStorageBytes = minimumAvailableStorageBytes
+        self.storageUsage = storageUsage
+        self.allowsLowPowerMode = allowsLowPowerMode
+        self.maximumThermalState = maximumThermalState
+    }
 
     public init(
         requiredTier: HeadroomTier,
@@ -20,13 +40,15 @@ public struct HeadroomFeature: Equatable, Sendable {
         allowsLowPowerMode: Bool = true,
         maximumThermalState: HeadroomThermalState? = nil
     ) {
-        self.requiredTier = requiredTier
-        self.tierSource = tierSource
-        self.minimumAvailableMemoryBytes = minimumAvailableMemoryBytes
-        self.minimumAvailableStorageBytes = minimumAvailableStorageBytes
-        self.storageUsage = storageUsage
-        self.allowsLowPowerMode = allowsLowPowerMode
-        self.maximumThermalState = maximumThermalState
+        self.init(
+            requiredScore: requiredTier.minimumScore,
+            tierSource: tierSource,
+            minimumAvailableMemoryBytes: minimumAvailableMemoryBytes,
+            minimumAvailableStorageBytes: minimumAvailableStorageBytes,
+            storageUsage: storageUsage,
+            allowsLowPowerMode: allowsLowPowerMode,
+            maximumThermalState: maximumThermalState
+        )
     }
 
     public init(
@@ -39,7 +61,7 @@ public struct HeadroomFeature: Equatable, Sendable {
         maximumThermalState: HeadroomThermalState? = nil
     ) {
         self.init(
-            requiredTier: device.headroomTier,
+            requiredScore: device.headroomScore,
             tierSource: HeadroomFeatureTierSource(mode),
             minimumAvailableMemoryBytes: minimumAvailableMemoryBytes,
             minimumAvailableStorageBytes: minimumAvailableStorageBytes,
@@ -51,9 +73,9 @@ public struct HeadroomFeature: Equatable, Sendable {
 }
 
 public enum HeadroomFeatureTierSource: String, Codable, Sendable {
-    /// Gate using `effectiveTier`, including runtime pressure.
+    /// Gate using `effectiveScore`, including runtime pressure.
     case effective
-    /// Gate using `hardwareTier`, ignoring current runtime pressure.
+    /// Gate using `hardwareScore`, ignoring current runtime pressure.
     case hardware
 
     init(_ mode: HeadroomAvailabilityMode) {
@@ -79,7 +101,7 @@ public struct HeadroomFeatureAvailability: Equatable, Sendable {
 }
 
 public enum HeadroomAvailabilityFailure: Equatable, Sendable {
-    case tier(required: HeadroomTier, current: HeadroomTier, source: HeadroomFeatureTierSource)
+    case score(required: HeadroomScore, current: HeadroomScore, source: HeadroomFeatureTierSource)
     case lowPowerMode
     case thermalState(current: HeadroomThermalState, maximum: HeadroomThermalState)
     case memory(requiredBytes: UInt64, availableBytes: UInt64?)
@@ -94,16 +116,16 @@ enum HeadroomFeatureEvaluator {
     ) -> HeadroomFeatureAvailability {
         var failures: [HeadroomAvailabilityFailure] = []
 
-        let currentTier: HeadroomTier
+        let currentScore: HeadroomScore
         switch feature.tierSource {
         case .effective:
-            currentTier = snapshot.effectiveTier
+            currentScore = snapshot.effectiveScore
         case .hardware:
-            currentTier = snapshot.hardwareTier
+            currentScore = snapshot.hardwareScore
         }
 
-        if currentTier < feature.requiredTier {
-            failures.append(.tier(required: feature.requiredTier, current: currentTier, source: feature.tierSource))
+        if currentScore < feature.requiredScore {
+            failures.append(.score(required: feature.requiredScore, current: currentScore, source: feature.tierSource))
         }
 
         if !feature.allowsLowPowerMode, snapshot.signals.lowPowerModeEnabled {

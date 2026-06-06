@@ -2,28 +2,45 @@ import Foundation
 
 /// A point-in-time capability decision and the signals used to make it.
 public struct HeadroomSnapshot: Equatable, Sendable {
+    public let hardwareScore: HeadroomScore
+    public let effectiveScore: HeadroomScore
     public let hardwareTier: HeadroomTier
     public let effectiveTier: HeadroomTier
     public let signals: HeadroomSignals
+
+    public init(
+        hardwareScore: HeadroomScore,
+        effectiveScore: HeadroomScore,
+        signals: HeadroomSignals
+    ) {
+        self.hardwareScore = hardwareScore
+        self.effectiveScore = effectiveScore
+        self.hardwareTier = hardwareScore.tier
+        self.effectiveTier = effectiveScore.tier
+        self.signals = signals
+    }
 
     public init(
         hardwareTier: HeadroomTier,
         effectiveTier: HeadroomTier,
         signals: HeadroomSignals
     ) {
-        self.hardwareTier = hardwareTier
-        self.effectiveTier = effectiveTier
-        self.signals = signals
+        self.init(
+            hardwareScore: hardwareTier.representativeScore,
+            effectiveScore: effectiveTier.representativeScore,
+            signals: signals
+        )
     }
 }
 
-/// Runtime and hardware signals Headroom considered while choosing a tier.
+/// Runtime and hardware signals Headroom considered while choosing a score.
 public struct HeadroomSignals: Equatable, Sendable {
     public let deviceDescription: String
     public let deviceOverrideKey: String?
     public let machineIdentifier: String?
     public let isSimulator: Bool
     public let physicalMemoryBytes: UInt64
+    public let deviceKitScore: HeadroomScore?
     public let deviceKitTier: HeadroomTier?
     public let availableMemoryBytes: UInt64?
     public let memoryPressure: HeadroomMemoryPressure
@@ -37,6 +54,7 @@ public struct HeadroomSignals: Equatable, Sendable {
         machineIdentifier: String?,
         isSimulator: Bool,
         physicalMemoryBytes: UInt64,
+        deviceKitScore: HeadroomScore? = nil,
         deviceKitTier: HeadroomTier? = nil,
         availableMemoryBytes: UInt64? = nil,
         memoryPressure: HeadroomMemoryPressure = .unknown,
@@ -49,7 +67,8 @@ public struct HeadroomSignals: Equatable, Sendable {
         self.machineIdentifier = machineIdentifier
         self.isSimulator = isSimulator
         self.physicalMemoryBytes = physicalMemoryBytes
-        self.deviceKitTier = deviceKitTier
+        self.deviceKitScore = deviceKitScore
+        self.deviceKitTier = deviceKitTier ?? deviceKitScore?.tier
         self.availableMemoryBytes = availableMemoryBytes
         self.memoryPressure = memoryPressure
         self.lowPowerModeEnabled = lowPowerModeEnabled

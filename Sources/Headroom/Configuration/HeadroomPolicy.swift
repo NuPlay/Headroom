@@ -1,67 +1,71 @@
 import Foundation
 
-/// Opinionated defaults and knobs used to resolve Headroom tiers.
+/// Opinionated defaults and knobs used to resolve Headroom scores.
 public struct HeadroomPolicy: Equatable, Sendable {
     public static let `default` = HeadroomPolicy()
 
-    /// If Low Power Mode is enabled, cap the effective tier to this value. Set to `nil` to ignore Low Power Mode.
-    public var lowPowerModeCap: HeadroomTier?
+    /// Score penalty applied when Low Power Mode is enabled.
+    ///
+    /// Low Power Mode can reduce CPU benchmark scores significantly, but it also
+    /// caps ProMotion displays at 60 Hz. Headroom therefore uses a modest default
+    /// penalty and lets CPU/GPU-heavy features opt out with `allowsLowPowerMode`.
+    public var lowPowerModePenalty: Int
 
-    /// If thermal state is `.fair`, cap the effective tier to this value. Set to `nil` to ignore fair thermal state.
-    public var fairThermalCap: HeadroomTier?
+    /// Score penalty applied when thermal state is `.fair`.
+    public var fairThermalPenalty: Int
 
-    /// If thermal state is `.serious`, downgrade the effective tier by this many steps.
-    public var seriousThermalDowngrade: Int
+    /// Score penalty applied when thermal state is `.serious`.
+    public var seriousThermalPenalty: Int
 
-    /// If thermal state is `.critical`, force the effective tier to this value.
-    public var criticalThermalTier: HeadroomTier
+    /// Score forced when thermal state is `.critical`.
+    public var criticalThermalScore: HeadroomScore
 
-    /// If thermal state is unknown, cap the effective tier to this value. Set to `nil` to ignore unknown thermal state.
-    public var unknownThermalCap: HeadroomTier?
+    /// Score penalty applied when thermal state is unknown.
+    public var unknownThermalPenalty: Int
 
     /// Thresholds used to classify current memory pressure.
     public var memoryPressurePolicy: HeadroomMemoryPressurePolicy
 
-    /// Downgrade applied when memory pressure is `.constrained`.
-    public var constrainedMemoryDowngrade: Int
+    /// Score penalty applied when memory pressure is `.constrained`.
+    public var constrainedMemoryPenalty: Int
 
-    /// Downgrade applied when memory pressure is `.critical`.
-    public var criticalMemoryDowngrade: Int
+    /// Score penalty applied when memory pressure is `.critical`.
+    public var criticalMemoryPenalty: Int
 
     /// Baseline memory thresholds used as a fallback hardware signal.
-    public var memoryTierThresholds: HeadroomMemoryTierThresholds
+    public var memoryScoreThresholds: HeadroomMemoryScoreThresholds
 
-    /// Effective tier is capped at physical-memory-derived tier upgraded by this many steps.
-    public var physicalMemoryCapHeadroom: Int
+    /// Effective score is capped at physical-memory-derived score plus this headroom.
+    public var physicalMemoryScoreHeadroom: Int
 
-    /// Explicit per-device overrides. Prefer `Headroom.configure { $0.overrideDevice(.iPhone13, as: .high) }`.
-    var deviceOverrides: [String: HeadroomTier]
+    /// Explicit per-device overrides. Prefer `Headroom.configure { $0.overrideDevice(.iPhone13, as: 71) }`.
+    var deviceOverrides: [String: HeadroomScore]
 
-    /// Explicit per-Metal Apple GPU family overrides. Example: `9: .ultra`.
-    var metalFamilyOverrides: [Int: HeadroomTier]
+    /// Explicit per-Metal Apple GPU family overrides. Example: `9: 88`.
+    var metalFamilyOverrides: [Int: HeadroomScore]
 
     public init(
-        lowPowerModeCap: HeadroomTier? = .medium,
-        fairThermalCap: HeadroomTier? = .high,
-        seriousThermalDowngrade: Int = 1,
-        criticalThermalTier: HeadroomTier = .low,
-        unknownThermalCap: HeadroomTier? = .medium,
+        lowPowerModePenalty: Int = 8,
+        fairThermalPenalty: Int = 0,
+        seriousThermalPenalty: Int = 10,
+        criticalThermalScore: HeadroomScore = 25,
+        unknownThermalPenalty: Int = 8,
         memoryPressurePolicy: HeadroomMemoryPressurePolicy = .default,
-        constrainedMemoryDowngrade: Int = 1,
-        criticalMemoryDowngrade: Int = 2,
-        memoryTierThresholds: HeadroomMemoryTierThresholds = .default,
-        physicalMemoryCapHeadroom: Int = 1
+        constrainedMemoryPenalty: Int = 8,
+        criticalMemoryPenalty: Int = 18,
+        memoryScoreThresholds: HeadroomMemoryScoreThresholds = .default,
+        physicalMemoryScoreHeadroom: Int = 12
     ) {
-        self.lowPowerModeCap = lowPowerModeCap
-        self.fairThermalCap = fairThermalCap
-        self.seriousThermalDowngrade = seriousThermalDowngrade
-        self.criticalThermalTier = criticalThermalTier
-        self.unknownThermalCap = unknownThermalCap
+        self.lowPowerModePenalty = lowPowerModePenalty
+        self.fairThermalPenalty = fairThermalPenalty
+        self.seriousThermalPenalty = seriousThermalPenalty
+        self.criticalThermalScore = criticalThermalScore
+        self.unknownThermalPenalty = unknownThermalPenalty
         self.memoryPressurePolicy = memoryPressurePolicy
-        self.constrainedMemoryDowngrade = constrainedMemoryDowngrade
-        self.criticalMemoryDowngrade = criticalMemoryDowngrade
-        self.memoryTierThresholds = memoryTierThresholds
-        self.physicalMemoryCapHeadroom = physicalMemoryCapHeadroom
+        self.constrainedMemoryPenalty = constrainedMemoryPenalty
+        self.criticalMemoryPenalty = criticalMemoryPenalty
+        self.memoryScoreThresholds = memoryScoreThresholds
+        self.physicalMemoryScoreHeadroom = physicalMemoryScoreHeadroom
         self.deviceOverrides = [:]
         self.metalFamilyOverrides = [:]
     }
@@ -108,20 +112,35 @@ public struct HeadroomMemoryPressurePolicy: Equatable, Sendable {
 }
 
 /// Physical-memory thresholds used as a fallback hardware signal.
-public struct HeadroomMemoryTierThresholds: Equatable, Sendable {
-    public static let `default` = HeadroomMemoryTierThresholds()
+public struct HeadroomMemoryScoreThresholds: Equatable, Sendable {
+    public static let `default` = HeadroomMemoryScoreThresholds()
 
     public var mediumBytes: UInt64
     public var highBytes: UInt64
     public var ultraBytes: UInt64
+    public var lowScore: HeadroomScore
+    public var mediumScore: HeadroomScore
+    public var highScore: HeadroomScore
+    public var ultraScore: HeadroomScore
 
     public init(
         mediumBytes: UInt64 = 2 * 1_073_741_824,
         highBytes: UInt64 = 4 * 1_073_741_824,
-        ultraBytes: UInt64 = 8 * 1_073_741_824
+        ultraBytes: UInt64 = 8 * 1_073_741_824,
+        lowScore: HeadroomScore = 35,
+        mediumScore: HeadroomScore = 55,
+        highScore: HeadroomScore = 72,
+        ultraScore: HeadroomScore = 88
     ) {
         self.mediumBytes = mediumBytes
         self.highBytes = highBytes
         self.ultraBytes = ultraBytes
+        self.lowScore = lowScore
+        self.mediumScore = mediumScore
+        self.highScore = highScore
+        self.ultraScore = ultraScore
     }
 }
+
+/// Deprecated compatibility alias for older Headroom versions.
+public typealias HeadroomMemoryTierThresholds = HeadroomMemoryScoreThresholds

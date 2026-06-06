@@ -11,6 +11,13 @@ func hardwareTierResolverIPhoneIdentifierMapping() {
 }
 
 @Test
+func hardwareScoreResolverReferenceScores() {
+    #expect(HardwareScoreResolver.scoreForMachineIdentifier("iPhone14,5") == 71)
+    #expect(HardwareScoreResolver.scoreForMachineIdentifier("iPhone16,1") == 84)
+    #expect(HardwareScoreResolver.scoreForMachineIdentifier("iPhone17,1") == 92)
+}
+
+@Test
 func hardwareTierResolverMetalFamilyMapping() {
     #expect(HardwareTierResolver.tierForMetalAppleGPUFamily(5) == .medium)
     #expect(HardwareTierResolver.tierForMetalAppleGPUFamily(7) == .high)

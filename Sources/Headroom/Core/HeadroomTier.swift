@@ -15,6 +15,46 @@ extension HeadroomTier: Comparable {
 }
 
 public extension HeadroomTier {
+    /// Minimum score required for this tier.
+    var minimumScore: HeadroomScore {
+        switch self {
+        case .low:
+            return 0
+        case .medium:
+            return 40
+        case .high:
+            return 70
+        case .ultra:
+            return 82
+        }
+    }
+
+    /// Representative score used when a tier is the only available input.
+    var representativeScore: HeadroomScore {
+        switch self {
+        case .low:
+            return 25
+        case .medium:
+            return 55
+        case .high:
+            return 74
+        case .ultra:
+            return 88
+        }
+    }
+
+    init(score: HeadroomScore) {
+        if score >= HeadroomTier.ultra.minimumScore {
+            self = .ultra
+        } else if score >= HeadroomTier.high.minimumScore {
+            self = .high
+        } else if score >= HeadroomTier.medium.minimumScore {
+            self = .medium
+        } else {
+            self = .low
+        }
+    }
+
     /// Returns a tier downgraded by `steps`, clamped at `.low`.
     func downgraded(by steps: Int = 1) -> HeadroomTier {
         guard steps > 0 else { return self }

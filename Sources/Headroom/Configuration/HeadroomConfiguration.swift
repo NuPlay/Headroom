@@ -5,47 +5,59 @@ import DeviceKit
 public struct HeadroomConfiguration: Equatable, Sendable {
     public var policy: HeadroomPolicy
 
-    /// Overrides the resolved hardware tier. Useful for debugging, previews, and QA.
-    public var forcedHardwareTier: HeadroomTier?
+    /// Overrides the resolved hardware score. Useful for debugging, previews, and QA.
+    public var forcedHardwareScore: HeadroomScore?
 
-    /// Overrides the resolved effective tier. Useful for debugging, previews, and QA.
-    public var forcedEffectiveTier: HeadroomTier?
+    /// Overrides the resolved effective score. Useful for debugging, previews, and QA.
+    public var forcedEffectiveScore: HeadroomScore?
 
     public init(
         policy: HeadroomPolicy = .default,
-        forcedHardwareTier: HeadroomTier? = nil,
-        forcedEffectiveTier: HeadroomTier? = nil
+        forcedHardwareScore: HeadroomScore? = nil,
+        forcedEffectiveScore: HeadroomScore? = nil
     ) {
         self.policy = policy
-        self.forcedHardwareTier = forcedHardwareTier
-        self.forcedEffectiveTier = forcedEffectiveTier
+        self.forcedHardwareScore = forcedHardwareScore
+        self.forcedEffectiveScore = forcedEffectiveScore
     }
 }
 
 public extension HeadroomConfiguration {
-    var lowPowerModeCap: HeadroomTier? {
-        get { policy.lowPowerModeCap }
-        set { policy.lowPowerModeCap = newValue }
+    /// Compatibility convenience for code that still thinks in tiers.
+    var forcedHardwareTier: HeadroomTier? {
+        get { forcedHardwareScore?.tier }
+        set { forcedHardwareScore = newValue?.representativeScore }
     }
 
-    var fairThermalCap: HeadroomTier? {
-        get { policy.fairThermalCap }
-        set { policy.fairThermalCap = newValue }
+    /// Compatibility convenience for code that still thinks in tiers.
+    var forcedEffectiveTier: HeadroomTier? {
+        get { forcedEffectiveScore?.tier }
+        set { forcedEffectiveScore = newValue?.representativeScore }
     }
 
-    var seriousThermalDowngrade: Int {
-        get { policy.seriousThermalDowngrade }
-        set { policy.seriousThermalDowngrade = newValue }
+    var lowPowerModePenalty: Int {
+        get { policy.lowPowerModePenalty }
+        set { policy.lowPowerModePenalty = newValue }
     }
 
-    var criticalThermalTier: HeadroomTier {
-        get { policy.criticalThermalTier }
-        set { policy.criticalThermalTier = newValue }
+    var fairThermalPenalty: Int {
+        get { policy.fairThermalPenalty }
+        set { policy.fairThermalPenalty = newValue }
     }
 
-    var unknownThermalCap: HeadroomTier? {
-        get { policy.unknownThermalCap }
-        set { policy.unknownThermalCap = newValue }
+    var seriousThermalPenalty: Int {
+        get { policy.seriousThermalPenalty }
+        set { policy.seriousThermalPenalty = newValue }
+    }
+
+    var criticalThermalScore: HeadroomScore {
+        get { policy.criticalThermalScore }
+        set { policy.criticalThermalScore = newValue }
+    }
+
+    var unknownThermalPenalty: Int {
+        get { policy.unknownThermalPenalty }
+        set { policy.unknownThermalPenalty = newValue }
     }
 
     var memoryPressurePolicy: HeadroomMemoryPressurePolicy {
@@ -53,21 +65,34 @@ public extension HeadroomConfiguration {
         set { policy.memoryPressurePolicy = newValue }
     }
 
+    var memoryScoreThresholds: HeadroomMemoryScoreThresholds {
+        get { policy.memoryScoreThresholds }
+        set { policy.memoryScoreThresholds = newValue }
+    }
+
     var memoryTierThresholds: HeadroomMemoryTierThresholds {
-        get { policy.memoryTierThresholds }
-        set { policy.memoryTierThresholds = newValue }
+        get { policy.memoryScoreThresholds }
+        set { policy.memoryScoreThresholds = newValue }
+    }
+
+    mutating func overrideDevice(_ device: Device, as score: HeadroomScore) {
+        policy.deviceOverrides[device.headroomOverrideKey] = score
     }
 
     mutating func overrideDevice(_ device: Device, as tier: HeadroomTier) {
-        policy.deviceOverrides[device.headroomOverrideKey] = tier
+        overrideDevice(device, as: tier.representativeScore)
     }
 
     mutating func removeDeviceOverride(_ device: Device) {
         policy.deviceOverrides.removeValue(forKey: device.headroomOverrideKey)
     }
 
+    mutating func overrideMetalAppleGPUFamily(_ family: Int, as score: HeadroomScore) {
+        policy.metalFamilyOverrides[family] = score
+    }
+
     mutating func overrideMetalAppleGPUFamily(_ family: Int, as tier: HeadroomTier) {
-        policy.metalFamilyOverrides[family] = tier
+        overrideMetalAppleGPUFamily(family, as: tier.representativeScore)
     }
 
     mutating func removeMetalAppleGPUFamilyOverride(_ family: Int) {

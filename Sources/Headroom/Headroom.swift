@@ -6,6 +6,9 @@ public enum Headroom {
     /// Alias for a more fluent API: `Headroom.Tier.high`.
     public typealias Tier = HeadroomTier
 
+    /// Alias for score-oriented APIs.
+    public typealias Score = HeadroomScore
+
     /// Current global configuration.
     public static var configuration: HeadroomConfiguration {
         HeadroomConfigurationStore.shared.configuration
@@ -19,6 +22,16 @@ public enum Headroom {
     /// Restores the default configuration.
     public static func resetConfiguration() {
         HeadroomConfigurationStore.shared.reset()
+    }
+
+    /// Current device baseline score.
+    public static var hardwareScore: HeadroomScore {
+        snapshot.hardwareScore
+    }
+
+    /// Current effective score after runtime pressure modifiers.
+    public static var effectiveScore: HeadroomScore {
+        snapshot.effectiveScore
     }
 
     /// Current device baseline capability.
@@ -71,9 +84,14 @@ public enum Headroom {
         thermalState.isPerformanceConstrained
     }
 
-    /// Returns whether the current effective tier can run a feature that requires `tier`.
+    /// Returns whether the current effective score can run a feature that requires `score`.
+    public static func isAvailable(_ score: HeadroomScore) -> Bool {
+        effectiveScore >= score
+    }
+
+    /// Returns whether the current effective score can run a feature that requires `tier`.
     public static func isAvailable(_ tier: HeadroomTier) -> Bool {
-        effectiveTier >= tier
+        effectiveScore >= tier.minimumScore
     }
 
     /// Returns whether the current device can run a feature that requires a DeviceKit reference device.
@@ -85,20 +103,25 @@ public enum Headroom {
     ) -> Bool {
         switch mode {
         case .adaptive:
-            return effectiveTier >= device.headroomTier
+            return effectiveScore >= device.headroomScore
         case .hardwareOnly:
-            return hardwareTier >= device.headroomTier
+            return hardwareScore >= device.headroomScore
         }
+    }
+
+    /// Returns whether the current hardware score can run a feature that requires `score`, ignoring runtime pressure.
+    public static func hardwareIsAvailable(_ score: HeadroomScore) -> Bool {
+        hardwareScore >= score
     }
 
     /// Returns whether the current hardware tier can run a feature that requires `tier`, ignoring runtime pressure.
     public static func hardwareIsAvailable(_ tier: HeadroomTier) -> Bool {
-        hardwareTier >= tier
+        hardwareScore >= tier.minimumScore
     }
 
-    /// Returns whether the current hardware tier can run a feature that requires `device`, ignoring runtime pressure.
+    /// Returns whether the current hardware score can run a feature that requires `device`, ignoring runtime pressure.
     public static func hardwareIsAvailable(_ device: Device) -> Bool {
-        hardwareTier >= device.headroomTier
+        hardwareScore >= device.headroomScore
     }
 
     /// Returns whether a feature is available under the current snapshot and resources.

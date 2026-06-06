@@ -15,7 +15,7 @@ struct SystemHeadroomSignalProvider: HeadroomSignalProviding {
             machineIdentifier: MachineIdentifier.current(),
             isSimulator: isSimulator(device),
             physicalMemoryBytes: memory.physicalBytes,
-            deviceKitTier: deviceKitTier(device),
+            deviceKitScore: deviceKitScore(device),
             availableMemoryBytes: memory.availableBytes,
             memoryPressure: memory.pressure(using: memoryPressurePolicy),
             lowPowerModeEnabled: lowPowerModeEnabled(processInfo),
@@ -48,9 +48,9 @@ struct SystemHeadroomSignalProvider: HeadroomSignalProviding {
         #endif
     }
 
-    private func deviceKitTier(_ device: Device?) -> HeadroomTier? {
+    private func deviceKitScore(_ device: Device?) -> HeadroomScore? {
         #if os(iOS)
-        return device?.headroomTier
+        return device?.headroomScore
         #else
         return nil
         #endif
