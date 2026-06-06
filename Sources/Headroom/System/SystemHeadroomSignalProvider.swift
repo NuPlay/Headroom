@@ -1,6 +1,6 @@
 import Foundation
 #if os(iOS)
-import DeviceKit
+    import DeviceKit
 #endif
 
 struct SystemHeadroomSignalProvider: HeadroomSignalProviding {
@@ -26,55 +26,55 @@ struct SystemHeadroomSignalProvider: HeadroomSignalProviding {
 
     private func currentDevice() -> Device? {
         #if os(iOS)
-        return Device.current
+            return Device.current
         #else
-        return nil
+            return nil
         #endif
     }
 
     private func deviceDescription(_ device: Device?) -> String {
         #if os(iOS)
-        return device?.description ?? "Unknown device"
+            return device?.description ?? "Unknown device"
         #else
-        return "Unsupported platform"
+            return "Unsupported platform"
         #endif
     }
 
     private func deviceOverrideKey(_ device: Device?) -> String? {
         #if os(iOS)
-        return device?.headroomOverrideKey
+            return device?.headroomOverrideKey
         #else
-        return nil
+            return nil
         #endif
     }
 
     private func deviceKitScore(_ device: Device?) -> HeadroomScore? {
         #if os(iOS)
-        return device?.headroomScore
+            return device?.headroomScore
         #else
-        return nil
+            return nil
         #endif
     }
 
     private func isSimulator(_ device: Device?) -> Bool {
         #if os(iOS)
-        return device?.isSimulator ?? false
+            return device?.isSimulator ?? false
         #else
-        return false
+            return false
         #endif
     }
 
     private func lowPowerModeEnabled(_ processInfo: ProcessInfo) -> Bool {
         #if os(iOS) || os(tvOS) || os(watchOS)
-        return processInfo.isLowPowerModeEnabled
-        #elseif os(macOS)
-        if #available(macOS 12.0, *) {
             return processInfo.isLowPowerModeEnabled
-        } else {
-            return false
-        }
+        #elseif os(macOS)
+            if #available(macOS 12.0, *) {
+                return processInfo.isLowPowerModeEnabled
+            } else {
+                return false
+            }
         #else
-        return false
+            return false
         #endif
     }
 }

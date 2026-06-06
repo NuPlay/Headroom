@@ -1,5 +1,5 @@
-import Testing
 @testable import Headroom
+import Testing
 
 @Test
 func headroomScoreClampsToRange() {

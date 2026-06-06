@@ -1,5 +1,5 @@
-import Testing
 @testable import Headroom
+import Testing
 
 @Test
 func memoryInfoPressureThresholds() {
@@ -22,7 +22,7 @@ func memoryInfoCustomPressurePolicy() {
 
     let memory = HeadroomMemoryInfo(
         physicalBytes: 4 * 1_073_741_824,
-        availableBytes: 1_500 * 1_048_576
+        availableBytes: 1500 * 1_048_576
     )
 
     #expect(memory.pressure(using: policy) == .constrained)
@@ -31,7 +31,7 @@ func memoryInfoCustomPressurePolicy() {
 @Test
 func storageInfoConvenience() {
     let storage = HeadroomStorageInfo(
-        totalCapacityBytes: 1_000,
+        totalCapacityBytes: 1000,
         availableCapacityBytes: 300,
         importantAvailableCapacityBytes: 250,
         opportunisticAvailableCapacityBytes: 100
@@ -42,7 +42,13 @@ func storageInfoConvenience() {
     #expect(storage.availableBytes(for: .important) == 250)
     #expect(storage.availableBytes(for: .opportunistic) == 100)
     #expect(storage.canFit(bytes: 200, usage: .important))
+    #expect(storage.canFit(.bytes(200), usage: .important))
     #expect(!storage.canFit(bytes: 200, usage: .opportunistic))
+    #expect(!storage.canFit(.bytes(200), usage: .opportunistic))
+    #expect(storage.canFit(bytes: 0, usage: .opportunistic))
+    #expect(!storage.canFit(bytes: -1, usage: .important))
+    #expect(HeadroomStorageInfo().canFit(bytes: 0))
+    #expect(!HeadroomStorageInfo().canFit(bytes: 1))
 }
 
 @Test

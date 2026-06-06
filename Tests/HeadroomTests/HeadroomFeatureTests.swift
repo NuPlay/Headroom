@@ -1,6 +1,6 @@
-import Testing
 import DeviceKit
 @testable import Headroom
+import Testing
 
 @Test
 func featureAvailabilityPassesWhenRequirementsAreMet() {
@@ -14,7 +14,7 @@ func featureAvailabilityPassesWhenRequirementsAreMet() {
     let result = HeadroomFeatureEvaluator.availability(
         of: feature,
         snapshot: featureSnapshot(effectiveTier: .high, thermalState: .nominal),
-        resources: featureResources(availableMemoryBytes: 512 * 1_048_576, availableStorageBytes: 1_000)
+        resources: featureResources(availableMemoryBytes: 512 * 1_048_576, availableStorageBytes: 1000)
     )
 
     #expect(result.isAvailable)
@@ -24,8 +24,8 @@ func featureAvailabilityPassesWhenRequirementsAreMet() {
 func featureAvailabilityReportsFailures() {
     let feature = HeadroomFeature(
         requiredTier: .ultra,
-        minimumAvailableMemoryBytes: 1_000,
-        minimumAvailableStorageBytes: 1_000,
+        minimumAvailableMemoryBytes: 1000,
+        minimumAvailableStorageBytes: 1000,
         allowsLowPowerMode: false,
         maximumThermalState: .fair
     )
@@ -40,7 +40,6 @@ func featureAvailabilityReportsFailures() {
     #expect(result.failures.count == 5)
 }
 
-
 @Test
 func deviceKitReferenceDeviceMapsToExpectedScoreAndTier() {
     #expect(Device.unknown("iPhone12,1").headroomScore == 60)
@@ -53,11 +52,11 @@ func deviceKitReferenceDeviceMapsToExpectedScoreAndTier() {
 }
 
 #if os(iOS)
-@Test
-func deviceKitIPhoneCaseMapsToExpectedTier() {
-    #expect(Device.iPhone13.headroomTier == .high)
-    #expect(Device.iPhone15Pro.headroomTier == .ultra)
-}
+    @Test
+    func deviceKitIPhoneCaseMapsToExpectedTier() {
+        #expect(Device.iPhone13.headroomTier == .high)
+        #expect(Device.iPhone15Pro.headroomTier == .ultra)
+    }
 #endif
 
 @Test
@@ -67,7 +66,7 @@ func featureCanUseReferenceDeviceBaseline() {
     let result = HeadroomFeatureEvaluator.availability(
         of: feature,
         snapshot: featureSnapshot(effectiveTier: .high),
-        resources: featureResources(availableMemoryBytes: 512 * 1_048_576, availableStorageBytes: 1_000)
+        resources: featureResources(availableMemoryBytes: 512 * 1_048_576, availableStorageBytes: 1000)
     )
 
     #expect(result.isAvailable)
@@ -75,14 +74,13 @@ func featureCanUseReferenceDeviceBaseline() {
 
 @Test
 func globalConfigurationCanForceEffectiveTier() {
-    Headroom.resetConfiguration()
-    defer { Headroom.resetConfiguration() }
+    HeadroomTestSupport.withIsolatedConfiguration {
+        Headroom.configure {
+            $0.forcedEffectiveTier = .low
+        }
 
-    Headroom.configure {
-        $0.forcedEffectiveTier = .low
+        #expect(Headroom.effectiveTier == .low)
     }
-
-    #expect(Headroom.effectiveTier == .low)
 }
 
 private func featureSnapshot(
@@ -119,7 +117,7 @@ private func featureResources(
             availableBytes: availableMemoryBytes
         ),
         storage: HeadroomStorageInfo(
-            totalCapacityBytes: 10_000,
+            totalCapacityBytes: 10000,
             availableCapacityBytes: availableStorageBytes,
             importantAvailableCapacityBytes: availableStorageBytes,
             opportunisticAvailableCapacityBytes: availableStorageBytes

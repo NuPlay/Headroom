@@ -3,7 +3,7 @@ import Foundation
 final class HeadroomConfigurationStore {
     static let shared = HeadroomConfigurationStore()
 
-    private let lock = NSLock()
+    private let lock = NSRecursiveLock()
     private var storedConfiguration = HeadroomConfiguration()
 
     var configuration: HeadroomConfiguration {
@@ -12,7 +12,9 @@ final class HeadroomConfigurationStore {
 
     func configure(_ update: (inout HeadroomConfiguration) -> Void) {
         lock.withLock {
-            update(&storedConfiguration)
+            var updatedConfiguration = storedConfiguration
+            update(&updatedConfiguration)
+            storedConfiguration = updatedConfiguration
         }
     }
 
@@ -23,8 +25,8 @@ final class HeadroomConfigurationStore {
     }
 }
 
-private extension NSLock {
-    func withLock<T>(_ body: () throws -> T) rethrows -> T {
+extension NSRecursiveLock {
+    fileprivate func withLock<T>(_ body: () throws -> T) rethrows -> T {
         lock()
         defer { unlock() }
         return try body()

@@ -1,6 +1,6 @@
-import Testing
 import DeviceKit
 @testable import Headroom
+import Testing
 
 @Test
 func hardwareTierResolverIPhoneIdentifierMapping() {

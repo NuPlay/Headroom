@@ -1,13 +1,23 @@
 import Foundation
 
 /// A point-in-time capability decision and the signals used to make it.
-public struct HeadroomSnapshot: Equatable, Sendable {
+public struct HeadroomSnapshot: Codable, Equatable, Sendable {
+    /// Baseline hardware capability score before runtime penalties.
     public let hardwareScore: HeadroomScore
+
+    /// Runtime-adjusted score after Low Power Mode, thermal, and memory pressure.
     public let effectiveScore: HeadroomScore
+
+    /// Tier derived from `hardwareScore`.
     public let hardwareTier: HeadroomTier
+
+    /// Tier derived from `effectiveScore`.
     public let effectiveTier: HeadroomTier
+
+    /// Signals used to resolve the scores.
     public let signals: HeadroomSignals
 
+    /// Creates a snapshot from explicit scores and signals.
     public init(
         hardwareScore: HeadroomScore,
         effectiveScore: HeadroomScore,
@@ -15,11 +25,12 @@ public struct HeadroomSnapshot: Equatable, Sendable {
     ) {
         self.hardwareScore = hardwareScore
         self.effectiveScore = effectiveScore
-        self.hardwareTier = hardwareScore.tier
-        self.effectiveTier = effectiveScore.tier
+        hardwareTier = hardwareScore.tier
+        effectiveTier = effectiveScore.tier
         self.signals = signals
     }
 
+    /// Creates a compatibility snapshot from coarse tiers.
     public init(
         hardwareTier: HeadroomTier,
         effectiveTier: HeadroomTier,
@@ -34,20 +45,44 @@ public struct HeadroomSnapshot: Equatable, Sendable {
 }
 
 /// Runtime and hardware signals Headroom considered while choosing a score.
-public struct HeadroomSignals: Equatable, Sendable {
+public struct HeadroomSignals: Codable, Equatable, Sendable {
+    /// Human-readable device description.
     public let deviceDescription: String
+
+    /// Stable key used for device-level overrides, when available.
     public let deviceOverrideKey: String?
+
+    /// Machine identifier such as `iPhone16,1`, when available.
     public let machineIdentifier: String?
+
+    /// Whether the current process is running in a simulator.
     public let isSimulator: Bool
+
+    /// Physical memory, in bytes.
     public let physicalMemoryBytes: UInt64
+
+    /// DeviceKit-derived score, when available.
     public let deviceKitScore: HeadroomScore?
+
+    /// DeviceKit-derived tier, when available.
     public let deviceKitTier: HeadroomTier?
+
+    /// Estimated currently available memory, in bytes.
     public let availableMemoryBytes: UInt64?
+
+    /// Classified memory pressure.
     public let memoryPressure: HeadroomMemoryPressure
+
+    /// Whether Low Power Mode is enabled.
     public let lowPowerModeEnabled: Bool
+
+    /// Current thermal state.
     public let thermalState: HeadroomThermalState
+
+    /// Highest supported Metal Apple GPU family number, when available.
     public let metalAppleGPUFamily: Int?
 
+    /// Creates a signal bundle for scoring.
     public init(
         deviceDescription: String,
         deviceOverrideKey: String? = nil,
@@ -79,41 +114,53 @@ public struct HeadroomSignals: Equatable, Sendable {
 
 /// Platform-neutral representation of `ProcessInfo.ThermalState`.
 public enum HeadroomThermalState: String, Codable, Sendable {
+    /// The system reports normal thermal conditions.
     case nominal
+
+    /// The system is warm but generally still suitable for most work.
     case fair
+
+    /// The system is under serious thermal pressure.
     case serious
+
+    /// The system is under critical thermal pressure.
     case critical
+
+    /// Thermal state could not be mapped or is unavailable.
     case unknown
 }
 
 extension HeadroomThermalState: Comparable {
+    /// Compares thermal states by increasing performance constraint severity.
     public static func < (lhs: HeadroomThermalState, rhs: HeadroomThermalState) -> Bool {
         lhs.severity < rhs.severity
     }
 }
 
-public extension HeadroomThermalState {
-    var isPerformanceConstrained: Bool {
+extension HeadroomThermalState {
+    /// Whether this state should be treated as constraining performance-sensitive work.
+    public var isPerformanceConstrained: Bool {
         switch self {
         case .nominal:
-            return false
+            false
         case .fair, .serious, .critical, .unknown:
-            return true
+            true
         }
     }
 
-    var severity: Int {
+    /// Numeric severity used for ordering thermal states.
+    public var severity: Int {
         switch self {
         case .nominal:
-            return 0
+            0
         case .fair:
-            return 1
+            1
         case .serious:
-            return 2
+            2
         case .critical:
-            return 3
+            3
         case .unknown:
-            return 2
+            2
         }
     }
 }

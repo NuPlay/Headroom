@@ -1,5 +1,5 @@
-import Foundation
 import DeviceKit
+import Foundation
 
 /// Adaptive performance availability for iOS.
 public enum Headroom {
@@ -44,6 +44,29 @@ public enum Headroom {
         snapshot.effectiveTier
     }
 
+    /// Returns the current score for an availability mode.
+    ///
+    /// Use `.adaptive` for the default runtime-aware score and `.hardwareOnly`
+    /// when a decision should ignore current Low Power Mode, thermal, and memory pressure.
+    public static func score(for mode: HeadroomAvailabilityMode = .adaptive) -> HeadroomScore {
+        let currentSnapshot = snapshot
+
+        switch mode {
+        case .adaptive:
+            return currentSnapshot.effectiveScore
+        case .hardwareOnly:
+            return currentSnapshot.hardwareScore
+        }
+    }
+
+    /// Returns the current tier for an availability mode.
+    ///
+    /// Use `.adaptive` for the default runtime-aware tier and `.hardwareOnly`
+    /// when a decision should ignore current Low Power Mode, thermal, and memory pressure.
+    public static func tier(for mode: HeadroomAvailabilityMode = .adaptive) -> HeadroomTier {
+        score(for: mode).tier
+    }
+
     /// Full diagnostic view of the current device and runtime signals.
     public static var snapshot: HeadroomSnapshot {
         evaluator().snapshot()
@@ -84,14 +107,26 @@ public enum Headroom {
         thermalState.isPerformanceConstrained
     }
 
-    /// Returns whether the current effective score can run a feature that requires `score`.
-    public static func isAvailable(_ score: HeadroomScore) -> Bool {
-        effectiveScore >= score
+    /// Returns whether the current score can run a feature that requires `score`.
+    ///
+    /// The default `.adaptive` mode uses `effectiveScore`. Use `.hardwareOnly`
+    /// to compare against `hardwareScore` instead.
+    public static func isAvailable(
+        _ score: HeadroomScore,
+        mode: HeadroomAvailabilityMode = .adaptive
+    ) -> Bool {
+        Self.score(for: mode) >= score
     }
 
-    /// Returns whether the current effective score can run a feature that requires `tier`.
-    public static func isAvailable(_ tier: HeadroomTier) -> Bool {
-        effectiveScore >= tier.minimumScore
+    /// Returns whether the current score can run a feature that requires `tier`.
+    ///
+    /// The default `.adaptive` mode uses `effectiveScore`. Use `.hardwareOnly`
+    /// to compare against `hardwareScore` instead.
+    public static func isAvailable(
+        _ tier: HeadroomTier,
+        mode: HeadroomAvailabilityMode = .adaptive
+    ) -> Bool {
+        score(for: mode) >= tier.minimumScore
     }
 
     /// Returns whether the current device can run a feature that requires a DeviceKit reference device.
@@ -101,12 +136,7 @@ public enum Headroom {
         _ device: Device,
         mode: HeadroomAvailabilityMode = .adaptive
     ) -> Bool {
-        switch mode {
-        case .adaptive:
-            return effectiveScore >= device.headroomScore
-        case .hardwareOnly:
-            return hardwareScore >= device.headroomScore
-        }
+        isAvailable(device.headroomScore, mode: mode)
     }
 
     /// Returns whether the current hardware score can run a feature that requires `score`, ignoring runtime pressure.
@@ -129,10 +159,62 @@ public enum Headroom {
         availability(of: feature).isAvailable
     }
 
+    /// Returns whether a feature is available for supplied diagnostics.
+    ///
+    /// Use this overload in tests, previews, QA tools, or when replaying a previously logged
+    /// `HeadroomSnapshot` and `HeadroomResources` pair.
+    public static func isAvailable(
+        _ feature: HeadroomFeature,
+        snapshot: HeadroomSnapshot,
+        resources: HeadroomResources
+    ) -> Bool {
+        availability(of: feature, snapshot: snapshot, resources: resources).isAvailable
+    }
+
     /// Returns a detailed feature availability result with failure reasons.
     public static func availability(of feature: HeadroomFeature) -> HeadroomFeatureAvailability {
+        availability(
+            of: feature,
+            snapshot: snapshot,
+            resources: resources
+        )
+    }
+
+    /// Returns a detailed feature availability result for supplied diagnostics.
+    ///
+    /// This is useful for deterministic tests, previews, and post-hoc analysis because it does
+    /// not read live device state.
+    public static func availability(
+        of feature: HeadroomFeature,
+        snapshot: HeadroomSnapshot,
+        resources: HeadroomResources
+    ) -> HeadroomFeatureAvailability {
         HeadroomFeatureEvaluator.availability(
             of: feature,
+            snapshot: snapshot,
+            resources: resources
+        )
+    }
+
+    /// Returns a reproducible diagnostic report for a feature under current device state.
+    public static func diagnosticReport(of feature: HeadroomFeature) -> HeadroomFeatureDiagnosticReport {
+        diagnosticReport(
+            of: feature,
+            snapshot: snapshot,
+            resources: resources
+        )
+    }
+
+    /// Returns a reproducible diagnostic report for supplied diagnostics.
+    ///
+    /// The returned value is `Codable`, making it suitable for QA fixtures, logs, and support tickets.
+    public static func diagnosticReport(
+        of feature: HeadroomFeature,
+        snapshot: HeadroomSnapshot,
+        resources: HeadroomResources
+    ) -> HeadroomFeatureDiagnosticReport {
+        HeadroomFeatureDiagnosticReport(
+            feature: feature,
             snapshot: snapshot,
             resources: resources
         )

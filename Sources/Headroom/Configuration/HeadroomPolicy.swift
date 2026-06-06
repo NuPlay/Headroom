@@ -1,7 +1,8 @@
 import Foundation
 
 /// Opinionated defaults and knobs used to resolve Headroom scores.
-public struct HeadroomPolicy: Equatable, Sendable {
+public struct HeadroomPolicy: Codable, Equatable, Sendable {
+    /// Default scoring policy.
     public static let `default` = HeadroomPolicy()
 
     /// Score penalty applied when Low Power Mode is enabled.
@@ -44,6 +45,7 @@ public struct HeadroomPolicy: Equatable, Sendable {
     /// Explicit per-Metal Apple GPU family overrides. Example: `9: 88`.
     var metalFamilyOverrides: [Int: HeadroomScore]
 
+    /// Creates a scoring policy.
     public init(
         lowPowerModePenalty: Int = 8,
         fairThermalPenalty: Int = 0,
@@ -66,20 +68,29 @@ public struct HeadroomPolicy: Equatable, Sendable {
         self.criticalMemoryPenalty = criticalMemoryPenalty
         self.memoryScoreThresholds = memoryScoreThresholds
         self.physicalMemoryScoreHeadroom = physicalMemoryScoreHeadroom
-        self.deviceOverrides = [:]
-        self.metalFamilyOverrides = [:]
+        deviceOverrides = [:]
+        metalFamilyOverrides = [:]
     }
 }
 
 /// Thresholds used to classify available memory pressure.
-public struct HeadroomMemoryPressurePolicy: Equatable, Sendable {
+public struct HeadroomMemoryPressurePolicy: Codable, Equatable, Sendable {
+    /// Default memory-pressure thresholds.
     public static let `default` = HeadroomMemoryPressurePolicy()
 
+    /// Available-memory ratio below which pressure is constrained.
     public var constrainedAvailableRatio: Double
+
+    /// Available-memory ratio below which pressure is critical.
     public var criticalAvailableRatio: Double
+
+    /// Available bytes below which pressure is constrained.
     public var constrainedAvailableBytes: UInt64
+
+    /// Available bytes below which pressure is critical.
     public var criticalAvailableBytes: UInt64
 
+    /// Creates a memory-pressure policy.
     public init(
         constrainedAvailableRatio: Double = 0.12,
         criticalAvailableRatio: Double = 0.05,
@@ -92,6 +103,7 @@ public struct HeadroomMemoryPressurePolicy: Equatable, Sendable {
         self.criticalAvailableBytes = criticalAvailableBytes
     }
 
+    /// Classifies available memory using both absolute bytes and physical-memory ratio.
     public func pressure(availableBytes: UInt64?, physicalBytes: UInt64) -> HeadroomMemoryPressure {
         guard let availableBytes, physicalBytes > 0 else {
             return .unknown
@@ -112,17 +124,32 @@ public struct HeadroomMemoryPressurePolicy: Equatable, Sendable {
 }
 
 /// Physical-memory thresholds used as a fallback hardware signal.
-public struct HeadroomMemoryScoreThresholds: Equatable, Sendable {
+public struct HeadroomMemoryScoreThresholds: Codable, Equatable, Sendable {
+    /// Default physical-memory-to-score thresholds.
     public static let `default` = HeadroomMemoryScoreThresholds()
 
+    /// Physical memory required for the medium score.
     public var mediumBytes: UInt64
+
+    /// Physical memory required for the high score.
     public var highBytes: UInt64
+
+    /// Physical memory required for the ultra score.
     public var ultraBytes: UInt64
+
+    /// Score returned below `mediumBytes`.
     public var lowScore: HeadroomScore
+
+    /// Score returned at or above `mediumBytes`.
     public var mediumScore: HeadroomScore
+
+    /// Score returned at or above `highBytes`.
     public var highScore: HeadroomScore
+
+    /// Score returned at or above `ultraBytes`.
     public var ultraScore: HeadroomScore
 
+    /// Creates physical-memory score thresholds.
     public init(
         mediumBytes: UInt64 = 2 * 1_073_741_824,
         highBytes: UInt64 = 4 * 1_073_741_824,

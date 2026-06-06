@@ -1,15 +1,17 @@
-import Foundation
 import DeviceKit
+import Foundation
 
 enum HardwareScoreResolver {
     static func resolve(signals: HeadroomSignals, policy: HeadroomPolicy = .default) -> HeadroomScore {
         if let overrideKey = signals.deviceOverrideKey,
-           let override = policy.deviceOverrides[overrideKey] {
+           let override = policy.deviceOverrides[overrideKey]
+        {
             return override
         }
 
         if let identifier = signals.machineIdentifier,
-           let override = policy.deviceOverrides[identifier] {
+           let override = policy.deviceOverrides[identifier]
+        {
             return override
         }
 
@@ -22,7 +24,8 @@ enum HardwareScoreResolver {
         }
 
         if let identifier = signals.machineIdentifier,
-           let score = scoreForMachineIdentifier(identifier) {
+           let score = scoreForMachineIdentifier(identifier)
+        {
             candidates.append(score)
         }
 
@@ -114,9 +117,9 @@ enum HardwareScoreResolver {
             return 92
         case 9:
             return 84
-        case 7...8:
+        case 7 ... 8:
             return 74
-        case 5...6:
+        case 5 ... 6:
             return 60
         default:
             return 35
@@ -144,54 +147,54 @@ enum HardwareScoreResolver {
 
     static func scoreForCPU(_ cpu: Device.CPU) -> HeadroomScore {
         #if os(iOS) || os(tvOS)
-        switch cpu {
-        case .a19Pro:
-            return 98
-        case .a19:
-            return 95
-        case .a18Pro:
-            return 92
-        case .a18:
-            return 90
-        case .a17Pro:
-            return 84
-        case .a16Bionic:
-            return 79
-        case .a15Bionic:
-            return 72
-        case .a14Bionic:
-            return 66
-        case .a13Bionic:
-            return 60
-        case .a12XBionic, .a12ZBionic:
-            return 64
-        case .a12Bionic:
-            return 50
-        case .a11Bionic:
-            return 40
-        case .a10XFusion:
-            return 38
-        case .a10Fusion:
-            return 32
-        case .a9X:
-            return 30
-        case .a9:
-            return 28
-        case .m5:
-            return 100
-        case .m4:
-            return 96
-        case .m3:
-            return 94
-        case .m2:
-            return 90
-        case .m1:
-            return 86
-        default:
-            return 25
-        }
+            switch cpu {
+            case .a19Pro:
+                return 98
+            case .a19:
+                return 95
+            case .a18Pro:
+                return 92
+            case .a18:
+                return 90
+            case .a17Pro:
+                return 84
+            case .a16Bionic:
+                return 79
+            case .a15Bionic:
+                return 72
+            case .a14Bionic:
+                return 66
+            case .a13Bionic:
+                return 60
+            case .a12XBionic, .a12ZBionic:
+                return 64
+            case .a12Bionic:
+                return 50
+            case .a11Bionic:
+                return 40
+            case .a10XFusion:
+                return 38
+            case .a10Fusion:
+                return 32
+            case .a9X:
+                return 30
+            case .a9:
+                return 28
+            case .m5:
+                return 100
+            case .m4:
+                return 96
+            case .m3:
+                return 94
+            case .m2:
+                return 90
+            case .m1:
+                return 86
+            default:
+                return 25
+            }
         #else
-        return 25
+            return 25
         #endif
     }
 
@@ -212,24 +215,24 @@ enum HardwareScoreResolver {
         // Conservative because iPad identifiers are less linear across Air, mini, base, and Pro lines.
         switch major {
         case 16...:
-            return 92
-        case 14...15:
-            return 84
-        case 11...13:
-            return 72
-        case 7...10:
-            return 55
+            92
+        case 14 ... 15:
+            84
+        case 11 ... 13:
+            72
+        case 7 ... 10:
+            55
         default:
-            return 35
+            35
         }
     }
 
     private static func scoreForIPodMajor(_ major: Int) -> HeadroomScore {
         switch major {
         case 9...:
-            return 40
+            40
         default:
-            return 25
+            25
         }
     }
 }

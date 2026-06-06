@@ -54,6 +54,27 @@ Requirements:
 
 > DeviceKit 5.8.0 currently requires iOS 13+ through SwiftPM, so Headroom follows that minimum.
 
+### Project resources
+
+- [DocC overview](Sources/Headroom/Headroom.docc/Headroom.md)
+- [Examples](Examples/README.md)
+- [Sample app](Examples/SampleApp/README.md)
+- [Troubleshooting](Examples/Troubleshooting.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing guide](CONTRIBUTING.md)
+
+### Privacy manifest
+
+Headroom ships a `PrivacyInfo.xcprivacy` manifest. The library does not collect data, does not track users, and does not contact tracking domains. It declares disk-space required-reason API usage with reason `E174.1` because `Headroom.storage` and feature gates can check whether there is enough local space before user-visible work such as downloads, caches, or media processing.
+
+### Testing
+
+Run the package tests with SwiftPM:
+
+```sh
+swift test
+```
+
 ---
 
 ## Why?
@@ -201,6 +222,7 @@ By default, Headroom uses **adaptive** availability.
 
 ```swift
 Headroom.isAvailable(.iPhone13)
+Headroom.isAvailable(.high)
 ```
 
 That means runtime pressure can cause fallback even on good hardware. The penalty is score-based, so an iPhone 15 Pro-class device can often still satisfy an iPhone 13-class feature under one pressure signal.
@@ -209,6 +231,10 @@ Use `hardwareOnly` when you only care about the device class:
 
 ```swift
 Headroom.isAvailable(.iPhone13, mode: .hardwareOnly)
+Headroom.isAvailable(.high, mode: .hardwareOnly)
+
+let hardwareScore = Headroom.score(for: .hardwareOnly)
+let hardwareTier = Headroom.tier(for: .hardwareOnly)
 ```
 
 ```mermaid
@@ -228,6 +254,9 @@ flowchart LR
 | --- | --- |
 | “iPhone 13 or better, considering runtime pressure” | `Headroom.isAvailable(.iPhone13)` |
 | “iPhone 13 or better, hardware only” | `Headroom.isAvailable(.iPhone13, mode: .hardwareOnly)` |
+| “High tier or better, hardware only” | `Headroom.isAvailable(.high, mode: .hardwareOnly)` |
+| Current score for a mode | `Headroom.score(for: .adaptive)` / `Headroom.score(for: .hardwareOnly)` |
+| Current tier for a mode | `Headroom.tier(for: .adaptive)` / `Headroom.tier(for: .hardwareOnly)` |
 | Current effective score | `Headroom.effectiveScore` |
 | Current hardware score | `Headroom.hardwareScore` |
 | Current effective tier | `Headroom.effectiveTier` |
@@ -237,6 +266,11 @@ flowchart LR
 | Thermal state | `Headroom.thermalState` |
 | Detailed diagnostic snapshot | `Headroom.snapshot` |
 | Detailed feature result | `Headroom.availability(of:)` |
+| Evaluate a saved snapshot/resources pair | `Headroom.availability(of:snapshot:resources:)` |
+| Reproducible feature diagnostic report | `Headroom.diagnosticReport(of:)` |
+| Diagnostic report schema version | `report.schemaVersion` / `HeadroomFeatureDiagnosticReport.currentSchemaVersion` |
+| Check decoded support artifact consistency | `report.isReplayConsistent` |
+| Typed byte counts | `HeadroomByteCount.mebibytes(300)` / `.gibibytes(2)` |
 
 ---
 
@@ -277,7 +311,10 @@ For expensive features, define a feature gate:
 ```swift
 let realtimeBlur = HeadroomFeature(
     .iPhone13,
-    minimumAvailableMemoryBytes: 300 * 1_048_576,
+    resources: .init(
+        memory: .mebibytes(300),
+        storage: .gibibytes(2)
+    ),
     allowsLowPowerMode: false,
     maximumThermalState: .fair
 )
@@ -295,8 +332,23 @@ Need to debug why it failed?
 let result = Headroom.availability(of: realtimeBlur)
 
 if !result.isAvailable {
-    print(result.failures)
+    print(result.failureCodes)       // ["score", "lowPowerMode", ...]
+    print(result.diagnosticSummary)
+    result.recoverySuggestions.forEach { print("• \($0)") }
 }
+
+let report = Headroom.diagnosticReport(of: realtimeBlur)
+let data = try JSONEncoder().encode(report)
+```
+
+Need deterministic tests or QA replay? Evaluate a feature against saved diagnostics without reading live device state:
+
+```swift
+let result = Headroom.availability(
+    of: realtimeBlur,
+    snapshot: savedSnapshot,
+    resources: savedResources
+)
 ```
 
 Failure reasons can include:
@@ -306,6 +358,14 @@ Failure reasons can include:
 - thermal state is too high,
 - available memory is too low,
 - available storage is too low.
+
+Use `failureKinds`, `failureCodes`, `contains(_:)`, or `failures(of:)` when product logic or QA tooling needs stable machine-readable categories instead of display text.
+
+`HeadroomFeatureAvailability`, `HeadroomAvailabilityFailure`, snapshots, resources, configuration, and feature definitions are `Codable`, so you can persist QA fixtures or send structured diagnostics to your own logging pipeline.
+
+For support tickets or QA replay, `HeadroomFeatureDiagnosticReport` bundles the feature, snapshot, resources, schema version, and availability result into one `Codable` value. Failure JSON uses a stable tagged shape with a `kind` field, so support tooling can inspect failure records without parsing display strings.
+
+When decoding a report from a log or support ticket, use `report.isCurrentSchemaVersion` to identify legacy artifacts and `report.isReplayConsistent` to confirm the embedded availability result still matches a fresh replay from the report's feature, snapshot, and resources.
 
 ---
 
@@ -349,6 +409,10 @@ storage.importantAvailableCapacityBytes
 storage.opportunisticAvailableCapacityBytes
 
 if storage.canFit(bytes: 500_000_000, usage: .important) {
+    startDownload()
+}
+
+if storage.canFit(.megabytes(500), usage: .important) {
     startDownload()
 }
 ```
