@@ -4,7 +4,7 @@ All notable changes to Headroom will be documented in this file.
 
 This project follows semantic versioning once `1.0.0` is released.
 
-## Unreleased
+## 0.2.0 - 2026-06-07
 
 ### Added
 

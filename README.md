@@ -43,7 +43,7 @@ Headroom is like a runtime companion to `#available`:
 ## Installation
 
 ```swift
-.package(url: "https://github.com/NuPlay/Headroom.git", from: "0.1.0")
+.package(url: "https://github.com/NuPlay/Headroom.git", from: "0.2.0")
 ```
 
 Requirements:
