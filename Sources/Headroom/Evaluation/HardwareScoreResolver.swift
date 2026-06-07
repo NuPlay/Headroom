@@ -43,48 +43,13 @@ enum HardwareScoreResolver {
     static func scoreForMachineIdentifier(_ identifier: String) -> HeadroomScore? {
         let normalized = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        switch normalized {
-        case "iPhone18,1", "iPhone18,2":
-            return 100
-        case "iPhone18,4":
-            return 96
-        case "iPhone18,3", "iPhone18,5":
-            return 95
-        case "iPhone17,1", "iPhone17,2":
-            return 92
-        case "iPhone17,3", "iPhone17,4", "iPhone17,5":
-            return 90
-        case "iPhone16,1", "iPhone16,2":
-            return 84
-        case "iPhone15,2", "iPhone15,3", "iPhone15,4", "iPhone15,5":
-            return 79
-        case "iPhone14,2", "iPhone14,3", "iPhone14,6", "iPhone14,7", "iPhone14,8":
-            return 74
-        case "iPhone14,4", "iPhone14,5":
-            return 71
-        case "iPhone13,4":
-            return 68
-        case "iPhone13,3":
-            return 67
-        case "iPhone13,1", "iPhone13,2":
-            return 66
-        case "iPhone12,5":
-            return 62
-        case "iPhone12,3":
-            return 61
-        case "iPhone12,1":
-            return 60
-        case "iPhone12,8":
-            return 56
-        case "iPhone11,2", "iPhone11,4", "iPhone11,6", "iPhone11,8":
-            return 50
-        case "iPhone10,2", "iPhone10,3", "iPhone10,5", "iPhone10,6":
-            return 39
-        case "iPhone10,1", "iPhone10,4":
-            return 39
-        default:
-            break
-        }
+        #if os(iOS)
+            // Prefer the typed identifier map for known iOS hardware.
+            // The parser below is only a conservative fallback for unknown identifiers.
+            if let mappedScore = scoreForMappedIdentifier(normalized) {
+                return mappedScore
+            }
+        #endif
 
         let prefix = normalized.prefix { !$0.isNumber }
         let numbers = normalized.dropFirst(prefix.count).split(separator: ",")
@@ -106,6 +71,19 @@ enum HardwareScoreResolver {
             return nil
         }
     }
+
+    #if os(iOS)
+        private static func scoreForMappedIdentifier(_ identifier: String) -> HeadroomScore? {
+            let device = Device.mapToDevice(identifier: identifier)
+
+            switch device {
+            case .unknown(_):
+                return nil
+            default:
+                return device.headroomScore
+            }
+        }
+    #endif
 
     static func scoreForMetalAppleGPUFamily(_ family: Int, policy: HeadroomPolicy = .default) -> HeadroomScore {
         if let override = policy.metalFamilyOverrides[family] {
@@ -207,7 +185,7 @@ enum HardwareScoreResolver {
         if major == 13 { return 66 }
         if major == 12 { return 60 }
         if major == 11 { return 50 }
-        if major == 10 { return 40 }
+        if major == 10 { return 39 }
         return 25
     }
 
