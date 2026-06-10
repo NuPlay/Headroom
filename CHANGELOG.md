@@ -4,6 +4,17 @@ All notable changes to Headroom will be documented in this file.
 
 This project follows semantic versioning once `1.0.0` is released.
 
+## Unreleased
+
+### Added
+
+- GitHub Actions CI that runs `swift test` on macOS and builds the library for the iOS Simulator.
+
+### Changed
+
+- The library now builds without warnings under Swift strict concurrency checking, ahead of Swift 6 language mode.
+- Memory page size is read with `host_page_size` instead of the `vm_kernel_page_size` global.
+
 ## 0.2.0 - 2026-06-07
 
 ### Added
