@@ -79,7 +79,12 @@ enum HeadroomResourceReader {
 
             guard result == KERN_SUCCESS else { return nil }
 
-            let pageSize = UInt64(vm_kernel_page_size)
+            // `host_page_size` is the unit used by `host_statistics64` counts, and unlike
+            // the global `vm_kernel_page_size` it is safe under Swift 6 strict concurrency.
+            var hostPageSize: vm_size_t = 0
+            guard host_page_size(mach_host_self(), &hostPageSize) == KERN_SUCCESS else { return nil }
+
+            let pageSize = UInt64(hostPageSize)
             func bytes(_ pages: natural_t) -> UInt64 {
                 UInt64(pages) * pageSize
             }

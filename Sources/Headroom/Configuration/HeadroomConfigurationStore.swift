@@ -1,6 +1,7 @@
 import Foundation
 
-final class HeadroomConfigurationStore {
+/// `@unchecked Sendable`: all access to `storedConfiguration` is serialized through `lock`.
+final class HeadroomConfigurationStore: @unchecked Sendable {
     static let shared = HeadroomConfigurationStore()
 
     private let lock = NSRecursiveLock()
