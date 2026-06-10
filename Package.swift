@@ -5,6 +5,9 @@ let package = Package(
     name: "Headroom",
     platforms: [
         .iOS(.v13),
+        // Headroom is an iOS library, but the test suite runs on macOS via `swift test`.
+        // Swift Testing's @Test macro requires a macOS 10.15+ deployment target.
+        .macOS(.v10_15),
     ],
     products: [
         .library(

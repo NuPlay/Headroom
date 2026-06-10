@@ -14,6 +14,7 @@ This project follows semantic versioning once `1.0.0` is released.
 
 - The library now builds without warnings under Swift strict concurrency checking, ahead of Swift 6 language mode.
 - Memory page size is read with `host_page_size` instead of the `vm_kernel_page_size` global.
+- The package manifest now declares a macOS 10.15 minimum so the Swift Testing test suite builds on CI toolchains.
 
 ## 0.2.0 - 2026-06-07
 
