@@ -4,6 +4,14 @@ All notable changes to Headroom will be documented in this file.
 
 This project follows semantic versioning once `1.0.0` is released.
 
+## 0.3.1 - 2026-06-10
+
+### Changed
+
+- CI now runs `xcodebuild test` on the iOS Simulator instead of `swift test` on macOS, so tests execute in the same environment as the library target.
+- CI selects Xcode 26 on GitHub Actions and picks a concrete available iPhone simulator instead of pinning a fixed OS image.
+- Strict concurrency checks now build the iOS Simulator target in CI instead of the macOS host build.
+
 ## 0.3.0 - 2026-06-10
 
 ### Added

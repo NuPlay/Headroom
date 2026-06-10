@@ -7,22 +7,91 @@ on:
 
 jobs:
   test:
-    name: swift test (macOS)
+    name: test (iOS Simulator)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Run tests
-        run: swift test
-      - name: Build with strict concurrency
-        run: swift build -Xswiftc -strict-concurrency=complete
 
-  build-ios:
-    name: build (iOS Simulator)
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build for iOS Simulator
+      - name: Select Xcode
         run: |
+          set -euo pipefail
+          if [ -d /Applications/Xcode_26.3.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+          elif [ -d /Applications/Xcode_26.2.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.2.app/Contents/Developer
+          elif [ -d /Applications/Xcode_26.1.1.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.1.1.app/Contents/Developer
+          fi
+          xcodebuild -version
+          xcrun swift --version
+
+      - name: Run tests
+        run: |
+          set -euo pipefail
+          DESTINATION=$(python3 <<'PY'
+          import json
+          import subprocess
+          import sys
+
+          data = json.loads(
+              subprocess.check_output(
+                  ["xcrun", "simctl", "list", "devices", "available", "-j"],
+                  text=True,
+              )
+          )
+
+          candidates = []
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime or "SimRuntime" not in runtime:
+                  continue
+
+              version = runtime.split("iOS-")[-1].replace("-", ".")
+              version_key = tuple(int(part) for part in version.split("."))
+
+              for device in devices:
+                  if not device.get("isAvailable"):
+                      continue
+
+                  name = device.get("name", "")
+                  if not name.startswith("iPhone"):
+                      continue
+
+                  if name in ("iPhone 16", "iPhone 17"):
+                      priority = 300
+                  elif "Pro Max" in name:
+                      priority = 200
+                  elif "Pro" in name:
+                      priority = 150
+                  else:
+                      priority = 100
+
+                  candidates.append(
+                      (version_key, priority, name, device["udid"], version)
+                  )
+
+          if not candidates:
+              print("No available iPhone simulators found", file=sys.stderr)
+              sys.exit(1)
+
+          candidates.sort(reverse=True)
+          _, _, name, udid, version = candidates[0]
+          print(f"Picked {name} (iOS {version}, {udid})", file=sys.stderr)
+          print(f"platform=iOS Simulator,id={udid}")
+          PY
+          )
+
+          echo "Using destination: ${DESTINATION}"
+          xcodebuild test \
+            -scheme Headroom \
+            -destination "${DESTINATION}" \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Build with strict concurrency
+        run: |
+          set -euo pipefail
           xcodebuild build \
             -scheme Headroom \
-            -destination 'generic/platform=iOS Simulator'
+            -destination 'generic/platform=iOS Simulator' \
+            OTHER_SWIFT_FLAGS='-strict-concurrency=complete' \
+            CODE_SIGNING_ALLOWED=NO
