@@ -1,5 +1,6 @@
 # Headroom
 
+![CI](https://github.com/NuPlay/Headroom/actions/workflows/ci.yml/badge.svg)
 ![iOS 13+](https://img.shields.io/badge/iOS-13%2B-black)
 ![Swift Package Manager](https://img.shields.io/badge/SPM-supported-orange)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
