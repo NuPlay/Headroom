@@ -523,30 +523,9 @@ extension HeadroomStorageUsage {
 }
 
 private func headroomFormatBytes(_ bytes: UInt64) -> String {
-    headroomFormatBytes(Double(bytes))
+    HeadroomByteCount(bytes: bytes).description
 }
 
 private func headroomFormatBytes(_ bytes: Int64) -> String {
-    headroomFormatBytes(Double(max(0, bytes)))
-}
-
-private func headroomFormatBytes(_ bytes: Double) -> String {
-    let units = ["bytes", "KiB", "MiB", "GiB", "TiB"]
-    var value = bytes
-    var unitIndex = 0
-
-    while value >= 1024, unitIndex < units.count - 1 {
-        value /= 1024
-        unitIndex += 1
-    }
-
-    if unitIndex == 0 {
-        return "\(Int(value)) \(units[unitIndex])"
-    }
-
-    if value.rounded() == value {
-        return "\(Int(value)) \(units[unitIndex])"
-    }
-
-    return "\(String(format: "%.1f", value)) \(units[unitIndex])"
+    headroomFormatBytes(UInt64(max(0, bytes)))
 }
