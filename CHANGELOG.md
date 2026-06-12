@@ -4,6 +4,13 @@ All notable changes to Headroom will be documented in this file.
 
 This project follows semantic versioning once `1.0.0` is released.
 
+## Unreleased
+
+### Changed
+
+- CI now runs the test suite with Xcode 26 `swift test` on macOS and compiles the iOS Simulator test bundle with `xcodebuild build-for-testing`, avoiding simulator boot flakes while still checking iOS-only code.
+- CI explicitly selects Xcode 26 on `macos-15` instead of falling back to the runner's Xcode 16.4 default.
+
 ## 0.3.1 - 2026-06-10
 
 ### Changed
