@@ -8,8 +8,9 @@ This project follows semantic versioning once `1.0.0` is released.
 
 ### Changed
 
-- CI now runs the test suite with Xcode 26 `swift test` on macOS and compiles the iOS Simulator test bundle with `xcodebuild build-for-testing`, avoiding simulator boot flakes while still checking iOS-only code.
-- CI explicitly selects Xcode 26 on `macos-15` instead of falling back to the runner's Xcode 16.4 default.
+- CI now runs on GitHub's `macos-26` image, selects the newest available Xcode 26, and isolates SwiftPM/Xcode build state under the runner temp directory.
+- CI test/build failures now emit the tail of the underlying SwiftPM or `xcodebuild` log as GitHub annotations and step summaries, so failures remain diagnosable even when full job logs are unavailable.
+- CI still runs the test suite with Xcode 26 `swift test` on macOS and compiles the iOS Simulator test bundle with `xcodebuild build-for-testing`, avoiding simulator boot flakes while still checking iOS-only code.
 
 ## 0.3.1 - 2026-06-10
 
